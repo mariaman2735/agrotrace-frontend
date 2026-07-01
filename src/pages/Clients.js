@@ -1,0 +1,239 @@
+import React, { useState, useEffect } from 'react';
+import { getClients, createClient } from '../services/api';
+import { MdAdd, MdClose } from 'react-icons/md';
+import { FiTrash2 } from 'react-icons/fi';
+
+const Clients = () => {
+    const [clients, setClients] = useState([]);
+    const [showForm, setShowForm] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [message, setMessage] = useState('');
+    const [form, setForm] = useState({
+        nom: '', NINEA: '', adresse: '', telephone: '', email: ''
+    });
+
+    useEffect(() => { charger(); }, []);
+
+    const charger = async () => {
+        try {
+            const res = await getClients();
+            setClients(res.data);
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await createClient(form);
+            setMessage('Client créé avec succès !');
+            setForm({ nom: '', NINEA: '', adresse: '', telephone: '', email: '' });
+            setShowForm(false);
+            charger();
+            setTimeout(() => setMessage(''), 3000);
+        } catch (err) {
+            setMessage(err.response?.data?.message || 'Erreur');
+        }
+    };
+
+    return (
+        <div>
+            <div style={S.header}>
+                <div>
+                    <h1 style={S.title}>Clients</h1>
+                    <p style={S.subtitle}>Gérez votre portefeuille clients</p>
+                </div>
+                <button style={S.btnPrimary} onClick={() => setShowForm(true)}>
+                    <MdAdd size={18} /> Nouveau client
+                </button>
+            </div>
+
+            {message && <div style={S.alert}>{message}</div>}
+
+            {showForm && (
+                <div style={S.modalOverlay}>
+                    <div style={S.modal}>
+                        <div style={S.modalHeader}>
+                            <h3 style={S.modalTitle}>Nouveau client</h3>
+                            <button style={S.closeBtn} onClick={() => setShowForm(false)}>
+                                <MdClose size={20} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleSubmit}>
+                            <div style={S.formGrid}>
+                                <div style={S.formGroup}>
+                                    <label style={S.label}>Nom *</label>
+                                    <input style={S.input} value={form.nom}
+                                        onChange={e => setForm({...form, nom: e.target.value})}
+                                        required />
+                                </div>
+                                <div style={S.formGroup}>
+                                    <label style={S.label}>NINEA</label>
+                                    <input style={S.input} value={form.NINEA}
+                                        onChange={e => setForm({...form, NINEA: e.target.value})} />
+                                </div>
+                                <div style={S.formGroup}>
+                                    <label style={S.label}>Téléphone</label>
+                                    <input style={S.input} value={form.telephone}
+                                        onChange={e => setForm({...form, telephone: e.target.value})} />
+                                </div>
+                                <div style={S.formGroup}>
+                                    <label style={S.label}>Email</label>
+                                    <input style={S.input} type="email" value={form.email}
+                                        onChange={e => setForm({...form, email: e.target.value})} />
+                                </div>
+                                <div style={{ ...S.formGroup, gridColumn: '1 / -1' }}>
+                                    <label style={S.label}>Adresse</label>
+                                    <input style={S.input} value={form.adresse}
+                                        onChange={e => setForm({...form, adresse: e.target.value})} />
+                                </div>
+                            </div>
+                            <div style={S.modalFooter}>
+                                <button type="button" style={S.btnSecondary}
+                                    onClick={() => setShowForm(false)}>Annuler</button>
+                                <button type="submit" style={S.btnPrimary}>Enregistrer</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            <div style={S.tableCard}>
+                {loading ? (
+                    <p style={S.empty}>Chargement...</p>
+                ) : clients.length === 0 ? (
+                    <p style={S.empty}>Aucun client enregistré</p>
+                ) : (
+                    <table style={S.table}>
+                        <thead>
+                            <tr>
+                                <th style={S.th}>Nom</th>
+                                <th style={S.th}>NINEA</th>
+                                <th style={S.th}>Téléphone</th>
+                                <th style={S.th}>Email</th>
+                                <th style={S.th}>Adresse</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {clients.map((c) => (
+                                <tr key={c.id} style={S.tr}>
+                                    <td style={S.td}>
+                                        <div style={S.nameCell}>
+                                            <div style={S.avatar}>
+                                                {c.nom?.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <div style={S.nameText}>{c.nom}</div>
+                                                <div style={S.subText}>{c.email}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style={S.td}>
+                                        {c.NINEA && <span style={S.badge}>{c.NINEA}</span>}
+                                    </td>
+                                    <td style={S.td}>{c.telephone}</td>
+                                    <td style={S.td}>{c.email}</td>
+                                    <td style={S.td}>{c.adresse}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const S = {
+    header: {
+        display: 'flex', justifyContent: 'space-between',
+        alignItems: 'flex-start', marginBottom: '24px',
+    },
+    title: { fontSize: '28px', fontWeight: '700', color: '#0f172a', margin: '0 0 4px 0' },
+    subtitle: { color: '#94a3b8', fontSize: '14px', margin: 0 },
+    btnPrimary: {
+        display: 'flex', alignItems: 'center', gap: '6px',
+        backgroundColor: '#1B6B3A', color: '#fff',
+        border: 'none', padding: '10px 18px',
+        borderRadius: '8px', cursor: 'pointer',
+        fontSize: '14px', fontWeight: '600',
+    },
+    btnSecondary: {
+        backgroundColor: '#f1f5f9', color: '#555',
+        border: '1px solid #e2e8f0', padding: '10px 18px',
+        borderRadius: '8px', cursor: 'pointer', fontSize: '14px',
+    },
+    alert: {
+        backgroundColor: '#f0fdf4', color: '#16a34a',
+        padding: '12px 16px', borderRadius: '8px',
+        marginBottom: '16px', fontSize: '14px',
+        border: '1px solid #bbf7d0',
+    },
+    modalOverlay: {
+        position: 'fixed', top: 0, left: 0,
+        width: '100vw', height: '100vh',
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        zIndex: 500, display: 'flex',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    modal: {
+        backgroundColor: '#fff', borderRadius: '16px',
+        padding: '24px', width: '100%', maxWidth: '540px',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+    },
+    modalHeader: {
+        display: 'flex', justifyContent: 'space-between',
+        alignItems: 'center', marginBottom: '20px',
+    },
+    modalTitle: { fontSize: '18px', fontWeight: '700', color: '#0f172a', margin: 0 },
+    closeBtn: {
+        background: 'none', border: 'none',
+        cursor: 'pointer', color: '#94a3b8', padding: '4px',
+    },
+    modalFooter: {
+        display: 'flex', justifyContent: 'flex-end',
+        gap: '10px', marginTop: '20px',
+    },
+    formGrid: {
+        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px',
+    },
+    formGroup: { display: 'flex', flexDirection: 'column' },
+    label: { fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' },
+    input: {
+        padding: '10px 12px', border: '1px solid #e2e8f0',
+        borderRadius: '8px', fontSize: '14px', outline: 'none',
+        color: '#333', backgroundColor: '#fafafa',
+    },
+    tableCard: {
+        backgroundColor: '#fff', borderRadius: '12px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        border: '1px solid #f1f5f9', overflow: 'hidden',
+    },
+    table: { width: '100%', borderCollapse: 'collapse' },
+    th: {
+        padding: '12px 16px', textAlign: 'left',
+        fontSize: '12px', fontWeight: '600',
+        color: '#94a3b8', textTransform: 'uppercase',
+        letterSpacing: '0.5px', borderBottom: '1px solid #f1f5f9',
+    },
+    tr: { borderBottom: '1px solid #f8fafc' },
+    td: { padding: '14px 16px', fontSize: '14px', color: '#374151' },
+    nameCell: { display: 'flex', alignItems: 'center', gap: '10px' },
+    avatar: {
+        width: '36px', height: '36px', borderRadius: '50%',
+        backgroundColor: '#f0fdf4', color: '#1B6B3A',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontWeight: '700', fontSize: '14px', flexShrink: 0,
+        border: '1px solid #bbf7d0',
+    },
+    nameText: { fontWeight: '600', color: '#0f172a', fontSize: '14px' },
+    subText: { color: '#94a3b8', fontSize: '12px' },
+    badge: {
+        backgroundColor: '#f1f5f9', color: '#475569',
+        padding: '3px 10px', borderRadius: '20px',
+        fontSize: '12px', fontWeight: '500',
+    },
+    empty: { color: '#94a3b8', textAlign: 'center', padding: '40px', fontSize: '14px' },
+};
+
+export default Clients;
