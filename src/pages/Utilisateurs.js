@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getUtilisateurs, creerUtilisateur } from '../services/api';
-import { MdAdd, MdClose } from 'react-icons/md';
+import { MdAdd, MdClose, MdDelete } from 'react-icons/md';
+import API from '../services/api';
 
 const Utilisateurs = () => {
     const [utilisateurs, setUtilisateurs] = useState([]);
@@ -35,15 +36,38 @@ const Utilisateurs = () => {
         }
     };
 
+    const handleDelete = async (id, nom) => {
+        if (!window.confirm(`Voulez-vous supprimer l'utilisateur "${nom}" ?`)) return;
+        try {
+            await API.delete(`/auth/utilisateurs/${id}`);
+            setMessage('Utilisateur supprimé avec succès !');
+            charger();
+            setTimeout(() => setMessage(''), 3000);
+        } catch (e) {
+            setMessage('Erreur lors de la suppression');
+        }
+    };
+
+    const handleRoleChange = async (id, role) => {
+        try {
+            await API.put(`/auth/utilisateurs/${id}/role`, { role });
+            setMessage('Rôle mis à jour !');
+            charger();
+            setTimeout(() => setMessage(''), 3000);
+        } catch (e) {
+            setMessage('Erreur lors de la mise à jour du rôle');
+        }
+    };
+
     const roleStyle = (r) => {
         const map = {
-            ADMINISTRATEUR:       { bg: '#faf5ff', color: '#a855f7' },
-            RESP_ACHAT:           { bg: '#eff6ff', color: '#3b82f6' },
-            RESP_QUALITE:         { bg: '#f0fdf4', color: '#16a34a' },
-            RESP_STOCK:           { bg: '#fffbeb', color: '#f59e0b' },
-            RESP_COMMERCIAL:      { bg: '#fff1f2', color: '#f43f5e' },
+            ADMINISTRATEUR: { bg: '#faf5ff', color: '#a855f7' },
+            RESP_ACHAT: { bg: '#eff6ff', color: '#3b82f6' },
+            RESP_QUALITE: { bg: '#f0fdf4', color: '#16a34a' },
+            RESP_STOCK: { bg: '#fffbeb', color: '#f59e0b' },
+            RESP_COMMERCIAL: { bg: '#fff1f2', color: '#f43f5e' },
             OPERATEUR_PRODUCTION: { bg: '#f0f9ff', color: '#0ea5e9' },
-            AUDITEUR:             { bg: '#f8fafc', color: '#94a3b8' },
+            AUDITEUR: { bg: '#f8fafc', color: '#94a3b8' },
         };
         return map[r] || { bg: '#f1f5f9', color: '#555' };
     };
@@ -53,7 +77,7 @@ const Utilisateurs = () => {
             <div style={S.header}>
                 <div>
                     <h1 style={S.title}>Gestion des Utilisateurs</h1>
-                    <p style={S.subtitle}>Invitez et gérez les utilisateurs de l'application</p>
+                    <p style={S.subtitle}>Gérez les accès à la plateforme AgroTrace</p>
                 </div>
                 <button style={S.btnPrimary} onClick={() => setShowForm(true)}>
                     <MdAdd size={18} /> Nouvel utilisateur
@@ -133,8 +157,8 @@ const Utilisateurs = () => {
                                 <th style={S.th}>Utilisateur</th>
                                 <th style={S.th}>Login</th>
                                 <th style={S.th}>Rôle</th>
-                                <th style={S.th}>Statut</th>
-                                <th style={S.th}>Date création</th>
+                                <th style={S.th}>Modifier le rôle</th>
+                                <th style={S.th}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -147,7 +171,7 @@ const Utilisateurs = () => {
                                                 <div style={S.avatar}>
                                                     {u.nom?.charAt(0).toUpperCase()}
                                                 </div>
-                                                <div style={S.nameText}>{u.nom}</div>
+                                                <span style={S.nameText}>{u.nom}</span>
                                             </div>
                                         </td>
                                         <td style={S.td}>
@@ -159,16 +183,23 @@ const Utilisateurs = () => {
                                             </span>
                                         </td>
                                         <td style={S.td}>
-                                            <span style={{
-                                                ...S.badge,
-                                                backgroundColor: u.actif ? '#f0fdf4' : '#fff1f2',
-                                                color: u.actif ? '#16a34a' : '#f43f5e',
-                                            }}>
-                                                {u.actif ? 'Actif' : 'Inactif'}
-                                            </span>
+                                            <select style={S.selectAction}
+                                                defaultValue={u.role}
+                                                onChange={e => handleRoleChange(u.id, e.target.value)}>
+                                                <option value="ADMINISTRATEUR">Administrateur</option>
+                                                <option value="RESP_ACHAT">Resp. Achat</option>
+                                                <option value="RESP_QUALITE">Resp. Qualité</option>
+                                                <option value="RESP_STOCK">Resp. Stock</option>
+                                                <option value="RESP_COMMERCIAL">Resp. Commercial</option>
+                                                <option value="OPERATEUR_PRODUCTION">Opérateur Production</option>
+                                                <option value="AUDITEUR">Auditeur</option>
+                                            </select>
                                         </td>
                                         <td style={S.td}>
-                                            {u.dateCreation?.split('T')[0]}
+                                            <button style={S.iconBtn}
+                                                onClick={() => handleDelete(u.id, u.nom)}>
+                                                <MdDelete size={18} color="#ef4444" />
+                                            </button>
                                         </td>
                                     </tr>
                                 );
@@ -208,6 +239,8 @@ const S = {
     nameText: { fontWeight: '600', color: '#0f172a', fontSize: '14px' },
     badge: { padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '600' },
     loginBadge: { fontFamily: 'monospace', backgroundColor: '#f1f5f9', color: '#475569', padding: '3px 10px', borderRadius: '6px', fontSize: '13px' },
+    selectAction: { padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '12px', color: '#374151', cursor: 'pointer' },
+    iconBtn: { background: 'none', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '6px' },
     empty: { color: '#94a3b8', textAlign: 'center', padding: '40px', fontSize: '14px' },
 };
 
