@@ -39,6 +39,7 @@ export const getFournisseurs = () => API.get('/fournisseurs');
 export const createFournisseur = (data) => API.post('/fournisseurs', data);
 export const updateFournisseur = (id, data) => API.put(`/fournisseurs/${id}`, data);
 export const deleteFournisseur = (id) => API.delete(`/fournisseurs/${id}`);
+export const setMatieresPremieresFournisseur = (id, data) => API.put(`/fournisseurs/${id}/matieres-premieres`, data);
 
 // ── Lots de matières premières ────────────────────────────────────────────
 export const getLotsMP = () => API.get('/lots-mp');
@@ -80,10 +81,16 @@ export const createRappel = (data) => API.post('/rappels-produit', data);
 export const updateStatutRappel = (id, data) => API.put(`/rappels-produit/${id}/statut`, data);
 
 // ── Matières premières ────────────────────────────────────────────────────
-export const getMatieresPremières = () => API.get('/matieres-premieres');
+export const getMatieresPremieres = () => API.get('/matieres-premieres');
 export const createMatierePremiere = (data) => API.post('/matieres-premieres', data);
 export const updateMatierePremiere = (id, data) => API.put(`/matieres-premieres/${id}`, data);
 export const deleteMatierePremiere = (id) => API.delete(`/matieres-premieres/${id}`);
+
+// ── Produits ───────────────────────────────────────────────────────────────
+export const getProduits = () => API.get('/produits');
+export const createProduit = (data) => API.post('/produits', data);
+export const updateProduit = (id, data) => API.put(`/produits/${id}`, data);
+export const deleteProduit = (id) => API.delete(`/produits/${id}`);
 
 // ── Demandes d'accès ──────────────────────────────────────────────────────
 export const createDemandeAcces = (data) => API.post('/demandes-acces', data);

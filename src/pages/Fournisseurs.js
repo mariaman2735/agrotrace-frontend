@@ -1,33 +1,56 @@
 import React, { useState, useEffect } from 'react';
-import { getFournisseurs, createFournisseur, deleteFournisseur } from '../services/api';
+import { getFournisseurs, createFournisseur, deleteFournisseur, getMatieresPremieres, setMatieresPremieresFournisseur } from '../services/api';
 import { MdAdd, MdClose } from 'react-icons/md';
 import { FiTrash2 } from 'react-icons/fi';
 
 const Fournisseurs = () => {
     const [fournisseurs, setFournisseurs] = useState([]);
+    const [matieresPremieres, setMatieresPremieres] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
     const [form, setForm] = useState({
-        nom: '', NINEA: '', adresse: '', telephone: '', email: ''
+        nom: '', NINEA: '', adresse: '', telephone: '', email: '', matierePremiereIds: []
     });
 
     useEffect(() => { charger(); }, []);
 
     const charger = async () => {
         try {
-            const res = await getFournisseurs();
-            setFournisseurs(res.data);
+            const [fournRes, mpRes] = await Promise.all([
+                getFournisseurs(), getMatieresPremieres()
+            ]);
+            setFournisseurs(fournRes.data);
+            setMatieresPremieres(mpRes.data);
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
+    };
+
+    const toggleMatierePremiere = (id) => {
+        setForm(prev => {
+            const dejaChoisi = prev.matierePremiereIds.includes(id);
+            return {
+                ...prev,
+                matierePremiereIds: dejaChoisi
+                    ? prev.matierePremiereIds.filter(mpId => mpId !== id)
+                    : [...prev.matierePremiereIds, id]
+            };
+        });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await createFournisseur(form);
+            const { matierePremiereIds, ...fournisseurData } = form;
+            const res = await createFournisseur(fournisseurData);
+
+            // Lier les matières premières sélectionnées au fournisseur créé
+            if (matierePremiereIds.length > 0) {
+                await setMatieresPremieresFournisseur(res.data.fournisseurId, { matierePremiereIds });
+            }
+
             setMessage('Fournisseur créé avec succès !');
-            setForm({ nom: '', NINEA: '', adresse: '', telephone: '', email: '' });
+            setForm({ nom: '', NINEA: '', adresse: '', telephone: '', email: '', matierePremiereIds: [] });
             setShowForm(false);
             charger();
             setTimeout(() => setMessage(''), 3000);
@@ -106,6 +129,25 @@ const Fournisseurs = () => {
                                         value={form.email}
                                         onChange={e => setForm({...form, email: e.target.value})} />
                                 </div>
+                                <div style={{ ...S.formGroup, gridColumn: '1 / -1' }}>
+                                    <label style={S.label}>Matières premières fournies</label>
+                                    <div style={S.mpList}>
+                                        {matieresPremieres.length === 0 ? (
+                                            <p style={S.mpEmpty}>Aucune matière première dans le catalogue</p>
+                                        ) : (
+                                            matieresPremieres.map(mp => (
+                                                <label key={mp.id} style={S.mpItem}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={form.matierePremiereIds.includes(mp.id)}
+                                                        onChange={() => toggleMatierePremiere(mp.id)}
+                                                    />
+                                                    {mp.nom} ({mp.code})
+                                                </label>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                             <div style={S.modalFooter}>
                                 <button type="button" style={S.btnSecondary}
@@ -135,6 +177,7 @@ const Fournisseurs = () => {
                                 <th style={S.th}>NINEA</th>
                                 <th style={S.th}>Contact</th>
                                 <th style={S.th}>Adresse</th>
+                                <th style={S.th}>Matières fournies</th>
                                 <th style={S.th}>Actions</th>
                             </tr>
                         </thead>
@@ -159,6 +202,17 @@ const Fournisseurs = () => {
                                         <div style={S.nameText}>{f.telephone}</div>
                                     </td>
                                     <td style={S.td}>{f.adresse}</td>
+                                    <td style={S.td}>
+                                        {f.matieresPremieresFournies && f.matieresPremieresFournies.length > 0 ? (
+                                            <div style={S.mpTagsWrap}>
+                                                {f.matieresPremieresFournies.map(mp => (
+                                                    <span key={mp.id} style={S.mpTag}>{mp.nom}</span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <span style={S.subText}>—</span>
+                                        )}
+                                    </td>
                                     <td style={S.td}>
                                         <div style={S.actions}>
                                             <button style={S.iconBtn}
@@ -213,6 +267,7 @@ const S = {
         backgroundColor: '#fff', borderRadius: '16px',
         padding: '24px', width: '100%', maxWidth: '540px',
         boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+        maxHeight: '90vh', overflowY: 'auto',
     },
     modalHeader: {
         display: 'flex', justifyContent: 'space-between',
@@ -236,6 +291,24 @@ const S = {
         padding: '10px 12px', border: '1px solid #e2e8f0',
         borderRadius: '8px', fontSize: '14px', outline: 'none',
         color: '#333', backgroundColor: '#fafafa',
+    },
+    mpList: {
+        display: 'flex', flexDirection: 'column', gap: '8px',
+        maxHeight: '160px', overflowY: 'auto',
+        border: '1px solid #e2e8f0', borderRadius: '8px',
+        padding: '10px 12px', backgroundColor: '#fafafa',
+    },
+    mpItem: {
+        display: 'flex', alignItems: 'center', gap: '8px',
+        fontSize: '14px', color: '#374151', cursor: 'pointer',
+    },
+    mpEmpty: { color: '#94a3b8', fontSize: '13px', margin: 0 },
+    mpTagsWrap: { display: 'flex', flexWrap: 'wrap', gap: '4px' },
+    mpTag: {
+        backgroundColor: '#f0fdf4', color: '#1B6B3A',
+        padding: '2px 8px', borderRadius: '12px',
+        fontSize: '11px', fontWeight: '600',
+        border: '1px solid #bbf7d0',
     },
     tableCard: {
         backgroundColor: '#fff', borderRadius: '12px',

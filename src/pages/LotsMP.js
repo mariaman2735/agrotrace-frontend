@@ -1,27 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { getLotsMP, createLotMP, updateStatutLotMP, getFournisseurs } from '../services/api';
+import { getLotsMP, createLotMP, updateStatutLotMP, getFournisseurs, getMatieresPremieres } from '../services/api';
 import { MdAdd, MdClose } from 'react-icons/md';
 import { FiTrash2 } from 'react-icons/fi';
 
 const LotsMP = () => {
     const [lots, setLots] = useState([]);
     const [fournisseurs, setFournisseurs] = useState([]);
+    const [matieresPremieres, setMatieresPremieres] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
     const [form, setForm] = useState({
-        dateReception: '', quantite: '', dateDC: '', fournisseur_id: ''
+        dateReception: '', quantite: '', dateDC: '', fournisseur_id: '', matierePremiere_id: ''
     });
 
     useEffect(() => { charger(); }, []);
 
     const charger = async () => {
         try {
-            const [lotsRes, fournRes] = await Promise.all([
-                getLotsMP(), getFournisseurs()
+            const [lotsRes, fournRes, mpRes] = await Promise.all([
+                getLotsMP(), getFournisseurs(), getMatieresPremieres()
             ]);
             setLots(lotsRes.data);
             setFournisseurs(fournRes.data);
+            setMatieresPremieres(mpRes.data);
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
@@ -31,7 +33,7 @@ const LotsMP = () => {
         try {
             await createLotMP(form);
             setMessage('Lot MP créé avec succès !');
-            setForm({ dateReception: '', quantite: '', dateDC: '', fournisseur_id: '' });
+            setForm({ dateReception: '', quantite: '', dateDC: '', fournisseur_id: '', matierePremiere_id: '' });
             setShowForm(false);
             charger();
             setTimeout(() => setMessage(''), 3000);
@@ -85,6 +87,18 @@ const LotsMP = () => {
                         <form onSubmit={handleSubmit}>
                             <div style={S.formGrid}>
                                 <div style={S.formGroup}>
+                                    <label style={S.label}>Matière première *</label>
+                                    <select style={S.input}
+                                        value={form.matierePremiere_id}
+                                        onChange={e => setForm({...form, matierePremiere_id: e.target.value})}
+                                        required>
+                                        <option value="">Sélectionner</option>
+                                        {matieresPremieres.map(mp => (
+                                            <option key={mp.id} value={mp.id}>{mp.nom} ({mp.code})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div style={S.formGroup}>
                                     <label style={S.label}>Fournisseur *</label>
                                     <select style={S.input}
                                         value={form.fournisseur_id}
@@ -137,6 +151,7 @@ const LotsMP = () => {
                         <thead>
                             <tr>
                                 <th style={S.th}>Numéro de lot</th>
+                                <th style={S.th}>Matière première</th>
                                 <th style={S.th}>Fournisseur</th>
                                 <th style={S.th}>Date réception</th>
                                 <th style={S.th}>Quantité</th>
@@ -154,6 +169,7 @@ const LotsMP = () => {
                                         <td style={S.td}>
                                             <span style={S.lotNum}>{lot.numLot}</span>
                                         </td>
+                                        <td style={S.td}>{lot.matierePremiereNom || '—'}</td>
                                         <td style={S.td}>{lot.fournisseurNom}</td>
                                         <td style={S.td}>{lot.dateReception?.split('T')[0]}</td>
                                         <td style={S.td}>{lot.quantite}</td>

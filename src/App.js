@@ -22,6 +22,7 @@ import DemandesAcces from './pages/DemandesAcces';
 import MotDePasseOublie from './pages/MotDePasseOublie';
 import ReinitialiserMotDePasse from './pages/ReinitialiserMotDePasse';
 import MonProfil from './pages/MonProfil';
+import Produits from './pages/Produits';
 import {
     MdDashboard, MdSearch, MdPeople, MdInventory,
     MdFactory, MdLabel, MdCheckCircle, MdWarning,
@@ -38,6 +39,7 @@ const menuItems = {
         { path: '/lots-mp', label: 'Lots MP', Icon: MdInventory },
         { path: '/matieres-premieres', label: 'Matières premières', Icon: MdInventory },
         { section: 'PRODUCTION' },
+        { path: '/produits', label: 'Produits', Icon: MdLabel },
         { path: '/ordres-fabrication', label: 'Ordres fabrication', Icon: MdFactory },
         { path: '/lots-pf', label: 'Lots PF', Icon: MdLabel },
         { path: '/stock', label: 'Stocks', Icon: MdInventory },
@@ -66,6 +68,7 @@ const menuItems = {
     OPERATEUR_PRODUCTION: [
         { path: '/dashboard', label: 'Tableau de bord', Icon: MdDashboard },
         { section: 'PRODUCTION' },
+        { path: '/produits', label: 'Produits', Icon: MdLabel },
         { path: '/ordres-fabrication', label: 'Ordres fabrication', Icon: MdFactory },
         { path: '/lots-pf', label: 'Lots PF', Icon: MdLabel },
         { section: 'MON COMPTE' },
@@ -240,6 +243,7 @@ function App() {
                     <Route path="/demandes-acces" element={withLayout(DemandesAcces)} />
                     <Route path="/mon-profil" element={withLayout(MonProfil)} />
                     <Route path="*" element={<Navigate to="/login" />} />
+                    <Route path="/produits" element={withLayout(Produits)} />
                 </Routes>
             </BrowserRouter>
         </AuthProvider>

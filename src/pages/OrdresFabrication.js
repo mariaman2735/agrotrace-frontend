@@ -1,26 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { getOFs, createOF, updateStatutOF, consommerLotMP, getLotsMP } from '../services/api';
+import { getOFs, createOF, updateStatutOF, consommerLotMP, getLotsMP, getProduits } from '../services/api';
 import { MdAdd, MdClose } from 'react-icons/md';
 
 const OrdresFabrication = () => {
     const [ofs, setOfs] = useState([]);
     const [lotsMP, setLotsMP] = useState([]);
+    const [produits, setProduits] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
     const [form, setForm] = useState({
-        dateCreation: '', dateLancement: '', quantitePlanifiee: ''
+        dateCreation: '', dateLancement: '', quantitePlanifiee: '', produit_id: ''
     });
 
     useEffect(() => { charger(); }, []);
 
     const charger = async () => {
         try {
-            const [ofsRes, lotsRes] = await Promise.all([
-                getOFs(), getLotsMP()
+            const [ofsRes, lotsRes, produitsRes] = await Promise.all([
+                getOFs(), getLotsMP(), getProduits()
             ]);
             setOfs(ofsRes.data);
             setLotsMP(lotsRes.data);
+            setProduits(produitsRes.data);
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
     };
@@ -30,7 +32,7 @@ const OrdresFabrication = () => {
         try {
             await createOF(form);
             setMessage('Ordre de fabrication créé avec succès !');
-            setForm({ dateCreation: '', dateLancement: '', quantitePlanifiee: '' });
+            setForm({ dateCreation: '', dateLancement: '', quantitePlanifiee: '', produit_id: '' });
             setShowForm(false);
             charger();
             setTimeout(() => setMessage(''), 3000);
@@ -83,6 +85,18 @@ const OrdresFabrication = () => {
                         <form onSubmit={handleSubmit}>
                             <div style={S.formGrid}>
                                 <div style={S.formGroup}>
+                                    <label style={S.label}>Produit à fabriquer *</label>
+                                    <select style={S.input}
+                                        value={form.produit_id}
+                                        onChange={e => setForm({...form, produit_id: e.target.value})}
+                                        required>
+                                        <option value="">Sélectionner</option>
+                                        {produits.map(p => (
+                                            <option key={p.id} value={p.id}>{p.nom} ({p.reference})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div style={S.formGroup}>
                                     <label style={S.label}>Date de création *</label>
                                     <input style={S.input} type="date"
                                         value={form.dateCreation}
@@ -123,6 +137,7 @@ const OrdresFabrication = () => {
                         <thead>
                             <tr>
                                 <th style={S.th}>Numéro OF</th>
+                                <th style={S.th}>Produit</th>
                                 <th style={S.th}>Date création</th>
                                 <th style={S.th}>Date lancement</th>
                                 <th style={S.th}>Qté planifiée</th>
@@ -138,6 +153,7 @@ const OrdresFabrication = () => {
                                         <td style={S.td}>
                                             <span style={S.lotNum}>{of.numOrdreFabrication}</span>
                                         </td>
+                                        <td style={S.td}>{of.produitNom || '—'}</td>
                                         <td style={S.td}>{of.dateCreation?.split('T')[0]}</td>
                                         <td style={S.td}>{of.dateLancement?.split('T')[0] || '—'}</td>
                                         <td style={S.td}>{of.quantitePlanifiee}</td>
